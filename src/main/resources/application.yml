@@ -1,0 +1,10 @@
+spring:
+  security:
+    user:
+      name: Test
+      password: Mudo
+  datasource:
+    url: jdbc:postgresql://localhost:5432/JWTSecurity
+    username: admin
+    password: 123password
+    driver-class-name: org.postgresql.Driver
