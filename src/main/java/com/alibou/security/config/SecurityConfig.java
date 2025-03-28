@@ -89,7 +89,7 @@ public class SecurityConfig {
         //databasae authentication provider
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
         //we are not using a paswword encoder rigth now
-        provider.setPasswordEncoder(NoOpPasswordEncoder.getInstance());
+        provider.setPasswordEncoder(NoOpPasswordEncoder.getInstance());//NoOpPasswordEncoder.getInstance() (we are in part 4 of encrypting password
         provider.setUserDetailsService(userDetailsService);
         return provider;
 
