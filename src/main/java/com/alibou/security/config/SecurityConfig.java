@@ -3,9 +3,11 @@ package com.alibou.security.config;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.CsrfConfigurer;
@@ -13,9 +15,11 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 //configuration file to spring, basically customizing my own
 //basically th 2 @ are saying we are going this is a configuration and to go with this configuration
@@ -27,6 +31,9 @@ public class SecurityConfig {
     //inject our service for the database
     @Autowired
     private UserDetailsService userDetailsService;
+    //part 6 create the JwtFilter class
+    @Autowired
+    private JwtFilter jwtFilter;
 
 
 
@@ -72,10 +79,18 @@ public class SecurityConfig {
 
         //also since we dissable the csrf token for post, you dont need to send it
         return http.csrf(customizer ->customizer.disable())
-                .authorizeHttpRequests(requests -> requests.anyRequest().authenticated())
+                .authorizeHttpRequests(requests -> requests
+                        //we are going to add the things that ddont need basic information like the login and the register
+                        .requestMatchers("register","login")
+                        //then the thing in the os going to let it permit all on it
+                        .permitAll()
+                        .anyRequest().authenticated())
                 .httpBasic(Customizer.withDefaults())
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                //now for the last part we are going to validate the pocken part 6, and this is done before build (add filter before the user authentication filter basically before checking password
+                //and username
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
         //       http.formLogin(Customizer.withDefaults());
        // return http.build();
@@ -89,12 +104,22 @@ public class SecurityConfig {
         //databasae authentication provider
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
         //we are not using a paswword encoder rigth now
-        provider.setPasswordEncoder(NoOpPasswordEncoder.getInstance());//NoOpPasswordEncoder.getInstance() (we are in part 4 of encrypting password
+        //provider.setPasswordEncoder(NoOpPasswordEncoder.getInstance());//NoOpPasswordEncoder.getInstance() (we are in part 4 of encrypting password)
+        //change the to encryption password that we are verifying (also the strength is 12
+        provider.setPasswordEncoder(new BCryptPasswordEncoder(12));
         provider.setUserDetailsService(userDetailsService);
         return provider;
 
     }
 
+    //next is the JWT for part 5
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+        return config.getAuthenticationManager();
+        //THIS IS INTERFACE THE AUTHMANAGER
+
+
+    }
 
 
 //    //this is the second part were it involves the dataset for our user to have a list of users
@@ -121,4 +146,7 @@ public class SecurityConfig {
 //        //not working because we are isong pour own user detail service
 //        return new InMemoryUserDetailsManager(user1, user2);
 //    }
+
+
+
 }
